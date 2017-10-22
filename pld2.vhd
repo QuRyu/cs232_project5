@@ -75,6 +75,8 @@ begin
                                     end if;
                                 when "11" => -- all 1s
                                     SRC <= "11111111";
+                                when others =>
+                                    SRC <= "10101010";
                             end case;
                         when "01" =>  -- binary operator 
                             case IR(4 downto 3) is 
@@ -90,20 +92,23 @@ begin
                                     end if;
                                 when "11" => -- all 1s
                                     SRC <= "11111111";
+                                when others => 
+                                    SRC <= "10101010";
                             end case;
                         when "10" =>  -- unconditional branch
                             PC <= unsigned(IR(3 downto 0));
                         when "11" =>  -- conditional branch
-                            case IR(7) is -- determine the SRC specified
-                                when '0' => -- SRC is ACC
+                            if IR(7) = '0' then  -- SRC is ACC
                                     if ACC = 0 then 
                                         PC <= unsigned(IR(3 downto 0));
                                     end if;
-                                when '1' =>  -- SRC is LR
+                            else -- SRC is LR
                                     if LR = 0 then 
                                         PC <= unsigned(IR(3 downto 0));
                                     end if;
-                            end case;
+                            end if;
+                        when others => 
+                            SRC <= "11111111";
                     end case;
                     state <= sExecute2;
                 when sExecute2 =>
@@ -118,6 +123,8 @@ begin
                                     ACC(3 downto 0) <= SRC(3 downto 0);
                                 when "11" => -- ACC high 4 bits
                                     ACC(7 downto 4) <= SRC(7 downto 4);
+                                when others => 
+                                    ACC <= "00000000";
                             end case;
                         when "01"   => 
                             if IR(2) = '0' then 
@@ -143,6 +150,8 @@ begin
                                     temp <= rotate_left(temp, to_integer(SRC));
                                 when "111" => -- rotate right
                                     temp <= rotate_right(temp, to_integer(SRC));
+                                when others => 
+                                    temp <= "00000000";
                             end case;
 									 
 									 if IR(2) = '0' then 
