@@ -5,4 +5,7 @@ incremental_db/*
 *.qsf
 *.qws
 *.qpf
+*.bak
+*.jdi
+*.swp
 
