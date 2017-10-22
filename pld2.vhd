@@ -170,7 +170,7 @@ begin
 
     end process;
 
-    slowclock <= clock;
+    slowclock <= clk;
 
     IRview <= IR;
     lights <= std_logic_vector(LR);
