@@ -4,7 +4,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity lights is
+entity pld2 is
 
     port(
         clk      : in  std_logic;
@@ -13,33 +13,36 @@ entity lights is
         add      : in  std_logic; -- input for accelerating execution speed
         minus    : in  std_logic; -- input for slowing down execution speed
         lights   : out std_logic_vector(7 downto 0);
-        IRView   : out std_logic_vector(3 downto 0)
+        IRView   : out std_logic_vector(9 downto 0)
     );
 
 end entity;
 
-architecture rtl of lights is
+architecture rtl of pld2 is
 
     -- Build an enumerated type for the state machine
-    type state_type is (sFetch, sExecute);
+    type state_type is (sFetch, sExecute1, sExecute2);
 
     -- Register to hold the current state
     signal state   : state_type := sFetch;
 
-    signal IR : std_logic_vector (3 downto 0) := "0000";
+    signal IR : std_logic_vector (9 downto 0) := "0000000000";
     signal PC : unsigned (3 downto 0) := "0000";
     signal LR : unsigned (7 downto 0) := "00000000";
-    signal ROMvalue : std_logic_vector(3 downto 0);
+    signal ROMvalue : std_logic_vector(9 downto 0);
 
     signal slowclock : std_logic;
     signal counter : unsigned (23 downto 0);
 	 
     signal speed : unsigned (1 downto 0) := "00";
 
+    signal ACC : unsigned (7 downto 0);
+    signal SRC : unsigned (7 downto 0);
+
     component lightrom 
         port (
             addr : in std_logic_vector (3 downto 0);
-            data : out std_logic_vector (3 downto 0)
+            data : out std_logic_vector (9 downto 0)
         );
     end component;
 
@@ -47,10 +50,11 @@ begin
 
     -- Logic to advance to the next state
     process (slowclock, reset)
+        signal temp : unsigned (7 downto 0);
     begin
         if reset = '0' then
             state <= sFetch;
-            IR <= "0000";
+            IR <= "0000000000";
             PC <= "0000";
             LR <= "00000000";
             speed <= "00";
@@ -59,21 +63,94 @@ begin
                 when sFetch =>
                     PC <= PC + 1;
                     IR <= ROMvalue;
-                    state <= sExecute;
-                when sExecute =>
-                    case IR is 
-                        when "0000" => LR <= "00000000";
-                        when "0001" => LR <= '0' & LR(7 downto 1); -- LR >> 1                          
-                        when "0010" => LR <= LR(6 downto 0) & '0'; -- LR << 1
-                        when "0011" => LR <= LR + 1; -- add 1 
-                        when "0100" => LR <= LR - 1; -- subtract 1 
-                        when "0101" => LR <= not LR; -- invert all bits
-                        when "0110" => LR <= LR ror 1; -- rotate right by one 
-                        when "0111" => LR <= LR rol 1; -- rotate left by one 
-                        when others => -- conditional branch jump
-                            if LR(0) = '1' then 
-                                PC <= unsigned(IR);
+                    state <= sExecute1;
+                when sExecute1 =>
+                    case IR(9 downto 8) is 
+                        when "00" =>  -- move instruction
+                            case IR(5 downto 4) is 
+                                when "00" => -- ACC  
+                                    SRC <= ACC;
+                                when "01" => -- LR
+                                    SRC <= LR;
+                                when "10" => -- IR low 4 bis sign extended
+                                    if IR(3) = '0' then -- extend 0
+                                        SRC <= "0000" & IR(3 downto 0);
+                                    else 00 -- extend 1
+                                        SRC <= "1111" & IR(3 downto 0);
+                                    end if;
+                                when "11" => -- all 1s
+                                    SRC <= "11111111";
+                            end case;
+                        when "01" =>  -- binary operator 
+                            case IR(4 downto 3) is 
+                                when "00" => -- ACC
+                                    SRC <= ACC;
+                                when "01" => -- LR
+                                    SRC <= LR;
+                                when "10" => -- IR low 2 bits sign extended
+                                    if IR(1) = '0' then 
+                                        SRC <= "000000" & IR(1 downto 0);
+                                    else 
+                                        SRC <= "111111" & IR(1 downto 0);
+                                    end if;
+                                when "11" => -- all 1s
+                                    SRC <= "11111111";
+                            end case;
+                        when "10" =>  -- unconditional branch
+                            PC <= IR(3 downto 0);
+                        when "11" =>  -- conditional branch
+                            case IR(7) is -- determine the SRC specified
+                                when '0' => -- SRC is ACC
+                                    if ACC = 0 then 
+                                        PC <= IR(3 downto 0);
+                                    end if;
+                                when '1' =>  -- SRC is LR
+                                    if LR = 0 then 
+                                        PC <= IR(3 downto 0);
+                                    end if;
+                            end case;
+                    end case;
+                    state <= sExecute2;
+                when sExecute2 =>
+                    case IR(9 downto 8) is 
+                        when "00"   => -- move instruction
+                            case IR(7 downto 6) is  -- dst
+                                when "00" => -- ACC
+                                    ACC <= SRC;
+                                when "01" => -- LR 
+                                    LR <= SRC;
+                                when "10" => -- ACC low 4 bits
+                                    ACC(3 downto 0) <= SRC(3 downto 0);
+                                when "11" => -- ACC high 4 bits
+                                    ACC(7 downto 4) <= SRC(7 downto 4);
+                            end case;
+                        when "01"   => 
+                            if IR(2) = '0' then 
+                                temp <= ACC;
+                            else 
+                                temp <= LR;
                             end if;
+
+                            case IR(7 downto 5) is 
+                                when "000" => -- add 
+                                    temp <= SRC + temp;
+                                when "001" => -- sub
+                                    temp <= temp - SRC;
+                                when "010" => -- shift left
+                                    temp <= temp srl SRC;
+                                when "011" => -- shift right with sign bit
+                                    temp <= temp sra SRC;
+                                when "100" => -- xor
+                                    temp <= temp xor SRC;
+                                when "101" => -- and 
+                                    temp <= temp and SRC;
+                                when "110" => -- rotate left
+                                    temp <= temp rol SRC;
+                                when "111" => -- rotate right
+                                    temp <= temp ror SRC;
+                            end case;
+                        when others => 
+                            temp <= 1;
                     end case;
                     state <= sFetch;
             end case;
