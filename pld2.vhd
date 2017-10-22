@@ -38,8 +38,10 @@ architecture rtl of pld2 is
 
     signal ACC : unsigned (7 downto 0);
     signal SRC : unsigned (7 downto 0);
+	 
+	 signal temp : unsigned (7 downto 0);
 
-    component lightrom 
+    component ROM 
         port (
             addr : in std_logic_vector (3 downto 0);
             data : out std_logic_vector (9 downto 0)
@@ -50,7 +52,6 @@ begin
 
     -- Logic to advance to the next state
     process (slowclock, reset)
-        signal temp : unsigned (7 downto 0);
     begin
         if reset = '0' then
             state <= sFetch;
@@ -74,9 +75,9 @@ begin
                                     SRC <= LR;
                                 when "10" => -- IR low 4 bis sign extended
                                     if IR(3) = '0' then -- extend 0
-                                        SRC <= "0000" & IR(3 downto 0);
-                                    else 00 -- extend 1
-                                        SRC <= "1111" & IR(3 downto 0);
+                                        SRC <= unsigned("0000" & IR(3 downto 0));
+                                    else -- extend 1
+                                        SRC <= unsigned("1111" & IR(3 downto 0));
                                     end if;
                                 when "11" => -- all 1s
                                     SRC <= "11111111";
@@ -89,24 +90,24 @@ begin
                                     SRC <= LR;
                                 when "10" => -- IR low 2 bits sign extended
                                     if IR(1) = '0' then 
-                                        SRC <= "000000" & IR(1 downto 0);
+                                        SRC <= unsigned("000000" & IR(1 downto 0));
                                     else 
-                                        SRC <= "111111" & IR(1 downto 0);
+                                        SRC <= unsigned("111111" & IR(1 downto 0));
                                     end if;
                                 when "11" => -- all 1s
                                     SRC <= "11111111";
                             end case;
                         when "10" =>  -- unconditional branch
-                            PC <= IR(3 downto 0);
+                            PC <= unsigned(IR(3 downto 0));
                         when "11" =>  -- conditional branch
                             case IR(7) is -- determine the SRC specified
                                 when '0' => -- SRC is ACC
                                     if ACC = 0 then 
-                                        PC <= IR(3 downto 0);
+                                        PC <= unsigned(IR(3 downto 0));
                                     end if;
                                 when '1' =>  -- SRC is LR
                                     if LR = 0 then 
-                                        PC <= IR(3 downto 0);
+                                        PC <= unsigned(IR(3 downto 0));
                                     end if;
                             end case;
                     end case;
@@ -137,20 +138,26 @@ begin
                                 when "001" => -- sub
                                     temp <= temp - SRC;
                                 when "010" => -- shift left
-                                    temp <= temp srl SRC;
+                                    temp <= shift_left(temp, to_integer(SRC));
                                 when "011" => -- shift right with sign bit
-                                    temp <= temp sra SRC;
+                                    temp <= shift_right(temp, to_integer(SRC));
                                 when "100" => -- xor
                                     temp <= temp xor SRC;
                                 when "101" => -- and 
                                     temp <= temp and SRC;
                                 when "110" => -- rotate left
-                                    temp <= temp rol SRC;
+                                    temp <= rotate_left(temp, to_integer(SRC));
                                 when "111" => -- rotate right
-                                    temp <= temp ror SRC;
+                                    temp <= rotate_right(temp, to_integer(SRC));
                             end case;
+									 
+									 if IR(2) = '0' then 
+									     ACC <= temp;
+								    else 
+										  LR <= temp;
+								    end if;
                         when others => 
-                            temp <= 1;
+                            temp <= "00000000";
                     end case;
                     state <= sFetch;
             end case;
@@ -182,7 +189,7 @@ begin
     IRview <= IR;
     lights <= std_logic_vector(LR);
     
-rom : lightrom 
+lightrom : ROM 
     port map (
         addr => std_logic_vector(PC),
         data => ROMvalue
