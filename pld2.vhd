@@ -9,9 +9,6 @@ entity pld2 is
     port(
         clk      : in  std_logic;
         reset    : in  std_logic;
-        pause    : in  std_logic;
-        add      : in  std_logic; -- input for accelerating execution speed
-        minus    : in  std_logic; -- input for slowing down execution speed
         lights   : out std_logic_vector(7 downto 0);
         IRView   : out std_logic_vector(9 downto 0)
     );
@@ -34,8 +31,6 @@ architecture rtl of pld2 is
     signal slowclock : std_logic;
     signal counter : unsigned (23 downto 0);
 	 
-    signal speed : unsigned (1 downto 0) := "00";
-
     signal ACC : unsigned (7 downto 0);
     signal SRC : unsigned (7 downto 0);
 	 
@@ -58,7 +53,6 @@ begin
             IR <= "0000000000";
             PC <= "0000";
             LR <= "00000000";
-            speed <= "00";
         elsif (rising_edge(slowclock)) then
             case state is
                 when sFetch =>
@@ -162,29 +156,21 @@ begin
                     state <= sFetch;
             end case;
 
-            if add = '0' then 
-                speed <= speed + 1;
-            elsif minus = '0' then 
-                speed <= speed - 1;
-            end if;
         end if;
     end process;
 
     -- slow down the clock
-    process (clk, reset, pause)
+    process (clk, reset)
     begin 
         if reset = '0' then 
             counter <= "000000000000000000000000";
-        elsif (rising_edge(clk) and pause = '1') then 
+        elsif (rising_edge(clk)) then 
             counter <= counter + 1;
         end if;
 
     end process;
 
-    slowclock <= counter(20) when speed = "11" else 
-                 counter(21) when speed = "10" else 
-                 counter(22) when speed = "01" else 
-                 counter(23);
+    slowclock <= clock;
 
     IRview <= IR;
     lights <= std_logic_vector(LR);
