@@ -86,3 +86,8 @@ isDigitString = foldl' step True
       step False _ = False 
       step True  x = isDigit x
 
+converter :: Command -> String 
+converter (Move src dst val) = "00" ++ fromEnumS dst ++ fromEnumS src ++ val
+converter (Arith op src dst val) = "01" ++ fromEnumS op ++ fromEnumS src ++ fromEnumS dst
+converter (Jump addr)            = "10" ++ "0000" ++ addr
+converter (Branch src addr)      = "11" ++ fromEnumS src ++ "000" ++ addr
