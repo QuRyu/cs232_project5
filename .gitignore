@@ -8,4 +8,5 @@ incremental_db/*
 *.bak
 *.jdi
 *.swp
+.stack-work/
 
