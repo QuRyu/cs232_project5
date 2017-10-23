@@ -1,71 +1,88 @@
-module Command where
+module Command (Command, 
+                command)
+       where
 
 import Data.Tuple (swap)
 import Data.Maybe (fromJust)
+import Data.Char (isDigit)
+import Data.Foldable (foldl')
 
 type Addr = String 
 type Val  = String
-
--- Source and Destination type encoding for move instruction
-data SrcM = ACC_MS | LR_MS | LR_L_M | Fill_M deriving (Eq, Show)
-data DstM = ACC_MD | LR_MD | ACC_L | ACC_H deriving (Eq, Show)
-
--- Source and Destination type encoding for binary operator
-data SrcA = ACC_AS | LR_AS | IR_L_A | Fill_A deriving (Eq, Show)
-data DstA = ACC_AD | LR_AD deriving (Eq, Show)
-
--- Source type encoding for conditional jump
-data SrcB = ACC_BS | LR_B_B deriving (Eq, Show)
-
--- operation type encoding for binary operations
-data Op = Add | Sub | Shift_L | Shift_R | Xor | And | Rotate_L | Rotate_R 
-          deriving (Eq, Show)
-
-opTable = [(Add, 000), (Sub, 001), (Shift_L, 010), (Shift_R, 011), 
-           (Xor, 100), (And, 101), (Rotate_L, 110), (Rotate_R, 111)]
-srcMTable = [(ACC_MS, 00), (LR_MS, 01), (LR_L_M, 10), (Fill_M, 11)]
-dstMTable = [(ACC_MD, 00), (LR_MD, 01), (ACC_L, 10), (ACC_H, 11)]
-srcATable = [(ACC_AS, 00), (LR_AS, 01), (IR_L_A, 10), (Fill_A, 11)]
-dstATable = [(ACC_AD, 0), (LR_AD, 1)]
-
-instance Enum Op where 
-    fromEnum = fromJust . flip lookup opTable 
-    toEnum   = fromJust . flip lookup (map swap opTable)
+type Src  = String
+type Dst  = String 
+type Op   = String
 
 
-instance Enum SrcM where 
-    fromEnum = fromJust . flip lookup srcMTable 
-    toEnum   = fromJust . flip lookup (map swap srcMTable)
+opEncod = [("Add", 000), ("Sub", 001), ("Shift_L", 010), ("Shift_R", 011), 
+           ("Xor", 100), ("And", 101), ("(Rotate_L", 110), ("Rotate_R", 111)]
+srcMEncod = [("ACC", 00), ("LR", 01), ("LR", 10), ("Fill", 11)]
+dstMEncod = [("ACC", 00), ("LR", 01), ("ACC", 10), ("ACC", 11)]
+srcAEncod = [("ACC", 00), ("LR", 01), ("IR", 10), ("Fill", 11)]
+dstAEncod = [("ACC", 0), ("LR", 1)]
+srcBEncod = [("ACC", 0), ("LR", 1)]
 
-instance Enum DstM where 
-    fromEnum = fromJust . flip lookup dstMTable 
-    toEnum   = fromJust . flip lookup (map swap dstMTable)
+fstList :: [(a, b)] -> [a]
+fstList = map fst 
 
-
-instance Enum SrcA where 
-    fromEnum = fromJust . flip lookup srcATable
-    toEnum   = fromJust . flip lookup (map swap srcATable)
-
-instance Enum DstA where 
-    fromEnum = fromJust . flip lookup dstATable 
-    toEnum   = fromJust . flip lookup (map swap dstATable)
-
-instance Enum SrcB where 
-    fromEnum ACC_BS = 0 
-    fromEnum LR_B_B = 1
-    toEnum   0      = ACC_BS
-    toEnum   1      = LR_B_B
-
-
--- convert each type enconding into binary form
-fromEnumS :: (Show a, Eq a, Enum a) => a -> String 
-fromEnumS = show . fromEnum
-
+opTable   = fstList opEncod
+srcMTable = fstList srcMEncod
+dstMTable = fstList dstMEncod
+srcATable = fstList srcAEncod
+dstATable = fstList dstAEncod
+srcBTable = fstList srcBEncod
 
 -- type encoding for commands
-data Command = Move   SrcM DstM Val        -- move instruction
-             | Arith  Op   SrcA DstA Val   -- binary opeartor 
+data Command = Move   Src Dst Val        -- move instruction
+             | Arith  Op  Src Dst Val   -- binary opeartor 
              | Jump   Addr                 -- unconditional jump
-             | Branch SrcB Addr            -- conditional jump
+             | Branch Src Addr            -- conditional jump
                 deriving (Eq, Show)
             
+command :: [String] -> Maybe Command 
+command ["Move", src, dst, val] = let x =  elemMaybe src srcMTable >> 
+                                           elemMaybe dst dstMTable >> 
+                                           isVal     val  
+                                  in case x of 
+                                       Just _  -> Just $ Move src dst val
+                                       Nothing -> Nothing
+command ["Jump", addr]         = let x = isAddr addr 
+                                 in case x of 
+                                         Just _  -> Just $ Jump addr 
+                                         Nothing -> Nothing
+command ["Branch", src, addr]  = let x = elemMaybe src srcBTable >>
+                                         isAddr    addr
+                                 in case x of 
+                                      Just _  -> Just $ Branch src addr
+                                      Nothing -> Nothing 
+command [op, src, dst, val]    = let x = elemMaybe op  opTable >>
+                                         elemMaybe src srcATable >> 
+                                         elemMaybe dst dstATable >>
+                                         isVal     val
+                                 in case x of 
+                                      Just _  -> Just $ Arith op src dst val
+                                      Nothing -> Nothing
+command _                      = Nothing 
+
+                               
+
+elemMaybe :: (Eq a, Foldable t) => a -> t a -> Maybe a
+elemMaybe x xs = if x `elem` xs 
+                    then Just x 
+                    else Nothing 
+
+isVal :: String -> Maybe String 
+isVal s = if length s == 4 && isDigitString s
+          then Just "" 
+          else Nothing
+
+isAddr = isVal
+
+{-# INLINE isAddr #-}
+
+isDigitString :: String -> Bool
+isDigitString = foldl' step True 
+    where 
+      step False _ = False 
+      step True  x = isDigit x
+
