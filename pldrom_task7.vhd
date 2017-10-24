@@ -15,9 +15,9 @@ begin
   data <= 
     "0010100000" when addr = "0000" else -- move 0s to ACC low 
     "0011100001" when addr = "0001" else -- move 0001 to ACC high 
-    "0001001010" when addr = "0010" else -- move acc to LR 
+    "0001000000" when addr = "0010" else -- move acc to LR 
     "0100110101" when addr = "0011" else -- LR minus -1 
-    "1110000011" when addr = "0100" else -- test if LR is 0; if not jump to 0011
-    "1000010000" when addr = "0101" else -- jump to 0000
+    "1110000000" when addr = "0100" else -- test if LR is 0; if is jump to 0000
+    "1000000011";                        -- jump to 0000
 
 end rlt;
