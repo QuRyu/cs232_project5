@@ -6,7 +6,7 @@ import Data.Foldable (foldl')
 
 
 lineNumber :: [String] -> [(String, Int)]
-lineNumber = flip zip [0..]
+lineNumber = flip zip [1..]
 
 lexer :: [(String, Int)] -> Either String [Command]
 lexer = reverseCommand . foldl' step (Right [])
