@@ -1,0 +1,9 @@
+Move Fill LR  0000
+Move LR   ACC_L 0111
+Move LR   ACC_H 0000
+Xor  ACC  LR  00
+Shift_L LR LR 00
+Add  LR   LR  00 
+And  IR   LR  01
+Branch LR 0000
+Jump 0011
