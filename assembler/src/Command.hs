@@ -43,7 +43,7 @@ data Command = Move   Src Dst Val        -- move instruction
 command :: [String] -> Either String Command 
 command ["Move", src, dst, val] = let x =  elemEither src srcMTable >> 
                                            elemEither dst dstMTable >> 
-                                           isVal     val  
+                                           isMVal     val  
                                   in case x of 
                                        Right _  -> Right $ Move src dst val
                                        Left s   -> Left s
@@ -59,7 +59,7 @@ command ["Branch", src, addr]  = let x = elemEither src srcBTable >>
 command [op, src, dst, val]    = let x = elemEither op  opTable >>
                                          elemEither src srcATable >> 
                                          elemEither dst dstATable >>
-                                         isVal     val
+                                         isAVal     val
                                  in case x of 
                                       Right _  -> Right $ Arith op src dst val
                                       Left s -> Left s
@@ -72,12 +72,17 @@ elemEither x xs = if x `elem` xs
                     then Right x 
                     else Left $ show x ++ " is not supported"
 
-isVal :: String -> Either String String 
-isVal s = if length s == 4 && isDigitString s
-          then Right ""
-          else Left $ s ++ " is not supported" 
+isMVal :: String -> Either String String 
+isMVal s = if length s == 4 && isDigitString s
+             then Right ""
+             else Left $ s ++ " is not supported" 
 
-isAddr = isVal
+isAVal :: String -> Either String String 
+isAVal s = if length s == 2 && isDigitString s 
+             then Right ""
+             else Left $ s ++ "is not supported"
+
+isAddr = isMVal
 
 {-# INLINE isAddr #-}
 
@@ -92,6 +97,6 @@ lookupS x xs = fromJust $ lookup x xs
 
 converter :: Command -> String 
 converter (Move src dst val) = "00" ++ lookupS dst dstMEncod ++ lookupS src srcMEncod ++ val
-converter (Arith op src dst val) = "01" ++ lookupS op opEncod ++ lookupS src srcAEncod ++ lookupS dst dstAEncod
+converter (Arith op src dst val) = "01" ++ lookupS op opEncod ++ lookupS src srcAEncod ++ lookupS dst dstAEncod ++ val
 converter (Jump addr)            = "10" ++ "0000" ++ addr
 converter (Branch src addr)      = "11" ++ lookupS src srcBEncod ++ "000" ++ addr
