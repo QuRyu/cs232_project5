@@ -177,6 +177,8 @@ begin
                                     LR <= "00000000";
                             end case;
                             end if;
+                    when others =>
+                        LR <= "00000000";
                     end case;
                     state <= sFetch;
             end case;
