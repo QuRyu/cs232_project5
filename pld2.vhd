@@ -133,34 +133,50 @@ begin
                                 temp <= LR;
                             end if;
 
+                            if IR(2) = '0' then -- dst is ACC
                             case IR(7 downto 5) is 
                                 when "000" => -- add 
-                                    temp <= SRC + temp;
+                                    ACC <= SRC + ACC;
                                 when "001" => -- sub
-                                    temp <= temp - SRC;
+                                    ACC <= ACC - SRC;
                                 when "010" => -- shift left
-                                    temp <= shift_left(temp, to_integer(SRC));
+                                    ACC <= shift_left(ACC, to_integer(SRC));
                                 when "011" => -- shift right with sign bit
-                                    temp <= shift_right(temp, to_integer(SRC));
+                                    ACC <= shift_right(ACC, to_integer(SRC));
                                 when "100" => -- xor
-                                    temp <= temp xor SRC;
+                                    ACC <= ACC xor SRC;
                                 when "101" => -- and 
-                                    temp <= temp and SRC;
+                                    ACC <= ACC and SRC;
                                 when "110" => -- rotate left
-                                    temp <= rotate_left(temp, to_integer(SRC));
+                                    ACC <= rotate_left(ACC, to_integer(SRC));
                                 when "111" => -- rotate right
-                                    temp <= rotate_right(temp, to_integer(SRC));
+                                    ACC <= rotate_right(ACC, to_integer(SRC));
                                 when others => 
-                                    temp <= "00000000";
+                                    ACC <= "00000000";
                             end case;
 									 
-									 if IR(2) = '0' then 
-									     ACC <= temp;
-								    else 
-										  LR <= temp;
-								    end if;
-                        when others => 
-                            temp <= "00000000";
+                            else 
+                            case IR(7 downto 5) is 
+                                when "000" => -- add 
+                                    LR <= SRC + LR;
+                                when "001" => -- sub
+                                    LR <= LR - SRC;
+                                when "010" => -- shift left
+                                    LR <= shift_left(LR, to_integer(SRC));
+                                when "011" => -- shift right with sign bit
+                                    LR <= shift_right(LR, to_integer(SRC));
+                                when "100" => -- xor
+                                    LR <= LR xor SRC;
+                                when "101" => -- and 
+                                    LR <= LR and SRC;
+                                when "110" => -- rotate left
+                                    LR <= rotate_left(LR, to_integer(SRC));
+                                when "111" => -- rotate right
+                                    LR <= rotate_right(LR, to_integer(SRC));
+                                when others => 
+                                    LR <= "00000000";
+                            end case;
+                            end if;
                     end case;
                     state <= sFetch;
             end case;
