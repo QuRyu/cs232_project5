@@ -16,7 +16,7 @@ type Op   = String
 
 
 opEncod = [("Add", "000"), ("Sub", "001"), ("Shift_L", "010"), ("Shift_R", "011"), 
-           ("Xor", "100"), ("And", "101"), ("(Rotate_L", "110"), ("Rotate_R", "111")]
+           ("Xor", "100"), ("And", "101"), ("Rotate_L", "110"), ("Rotate_R", "111")]
 srcMEncod = [("ACC", "00"), ("LR", "01"), ("IR", "10"), ("Fill", "11")]
 dstMEncod = [("ACC", "00"), ("LR", "01"), ("ACC_L", "10"), ("ACC_H", "11")]
 srcAEncod = [("ACC", "00"), ("LR", "01"), ("IR", "10"), ("Fill", "11")]
