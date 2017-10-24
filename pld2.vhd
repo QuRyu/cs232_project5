@@ -34,8 +34,6 @@ architecture rtl of pld2 is
     signal ACC : unsigned (7 downto 0);
     signal SRC : unsigned (7 downto 0);
 	 
-	 signal temp : unsigned (7 downto 0);
-
     component ROM 
         port (
             addr : in std_logic_vector (3 downto 0);
@@ -73,10 +71,8 @@ begin
                                     else -- extend 1
                                         SRC <= unsigned("1111" & IR(3 downto 0));
                                     end if;
-                                when "11" => -- all 1s
+                                when others => -- all 1s
                                     SRC <= "11111111";
-                                when others =>
-                                    SRC <= "10101010";
                             end case;
                         when "01" =>  -- binary operator 
                             case IR(4 downto 3) is 
@@ -90,14 +86,12 @@ begin
                                     else 
                                         SRC <= unsigned("111111" & IR(1 downto 0));
                                     end if;
-                                when "11" => -- all 1s
+                                when others => -- all 1s
                                     SRC <= "11111111";
-                                when others => 
-                                    SRC <= "10101010";
                             end case;
                         when "10" =>  -- unconditional branch
                             PC <= unsigned(IR(3 downto 0));
-                        when "11" =>  -- conditional branch
+                        when others =>  -- conditional branch
                             if IR(7) = '0' then  -- SRC is ACC
                                     if ACC = 0 then 
                                         PC <= unsigned(IR(3 downto 0));
@@ -107,8 +101,6 @@ begin
                                         PC <= unsigned(IR(3 downto 0));
                                     end if;
                             end if;
-                        when others => 
-                            SRC <= "11111111";
                     end case;
                     state <= sExecute2;
                 when sExecute2 =>
@@ -121,18 +113,10 @@ begin
                                     LR <= SRC;
                                 when "10" => -- ACC low 4 bits
                                     ACC(3 downto 0) <= SRC(3 downto 0);
-                                when "11" => -- ACC high 4 bits
+                                when others => -- ACC high 4 bits
                                     ACC(7 downto 4) <= SRC(7 downto 4);
-                                when others => 
-                                    ACC <= "00000000";
                             end case;
-                        when "01"   => 
-                            if IR(2) = '0' then 
-                                temp <= ACC;
-                            else 
-                                temp <= LR;
-                            end if;
-
+                        when "01"   => -- binary operation
                             if IR(2) = '0' then -- dst is ACC
                             case IR(7 downto 5) is 
                                 when "000" => -- add 
@@ -140,19 +124,17 @@ begin
                                 when "001" => -- sub
                                     ACC <= ACC - SRC;
                                 when "010" => -- shift left
-                                    ACC <= shift_left(ACC, to_integer(SRC));
+                                    ACC <= shift_left(ACC, 1);
                                 when "011" => -- shift right with sign bit
-                                    ACC <= shift_right(ACC, to_integer(SRC));
+                                    ACC <= shift_right(ACC, 1);
                                 when "100" => -- xor
                                     ACC <= ACC xor SRC;
                                 when "101" => -- and 
                                     ACC <= ACC and SRC;
                                 when "110" => -- rotate left
-                                    ACC <= rotate_left(ACC, to_integer(SRC));
-                                when "111" => -- rotate right
-                                    ACC <= rotate_right(ACC, to_integer(SRC));
-                                when others => 
-                                    ACC <= "00000000";
+                                    ACC <= rotate_left(ACC, 1);
+                                when others => -- rotate right
+                                    ACC <= rotate_right(ACC, 1);
                             end case;
 									 
                             else 
@@ -162,23 +144,20 @@ begin
                                 when "001" => -- sub
                                     LR <= LR - SRC;
                                 when "010" => -- shift left
-                                    LR <= shift_left(LR, to_integer(SRC));
+                                    LR <= shift_left(LR, 1);
                                 when "011" => -- shift right with sign bit
-                                    LR <= shift_right(LR, to_integer(SRC));
+                                    LR <= shift_right(LR, 1);
                                 when "100" => -- xor
                                     LR <= LR xor SRC;
                                 when "101" => -- and 
                                     LR <= LR and SRC;
                                 when "110" => -- rotate left
-                                    LR <= rotate_left(LR, to_integer(SRC));
-                                when "111" => -- rotate right
-                                    LR <= rotate_right(LR, to_integer(SRC));
-                                when others => 
-                                    LR <= "00000000";
+                                    LR <= rotate_left(LR, 1);
+                                when others => -- rotate right
+                                    LR <= rotate_right(LR, 1);
                             end case;
                             end if;
                     when others =>
-                        LR <= "00000000";
                     end case;
                     state <= sFetch;
             end case;
