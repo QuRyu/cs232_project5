@@ -63,7 +63,9 @@ command [op, src, dst, val]    = let x = elemEither op  opTable >>
                                  in case x of 
                                       Right _  -> Right $ Arith op src dst val
                                       Left s -> Left s
-command _                      = Left "no command given"
+command s@(x:xs)               = Left $ "could not parse" ++ unwords s
+command [""]                   = Left "No command given"
+command _                      = Left "unable to parse"
 
                                
 
