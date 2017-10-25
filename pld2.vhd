@@ -24,8 +24,8 @@ architecture rtl of pld2 is
     -- Register to hold the current state
     signal state   : state_type := sFetch;
 
-    signal IR : std_logic_vector (9 downto 0) := "0000000000";
-    signal PC : unsigned (3 downto 0) := "0000";
+    signal IR : std_logic_vector (10 downto 0) := "00000000000";
+    signal PC : unsigned (4 downto 0) := "00000";
     signal LR : unsigned (7 downto 0) := "00000000";
     signal ROMvalue : std_logic_vector(9 downto 0);
 
@@ -38,7 +38,7 @@ architecture rtl of pld2 is
     component ROM_task7 
         port (
             addr : in std_logic_vector (3 downto 0);
-            data : out std_logic_vector (9 downto 0)
+            data : out std_logic_vector (10 downto 0)
         );
     end component;
 
@@ -49,8 +49,8 @@ begin
     begin
         if reset = '0' then
             state <= sFetch;
-            IR <= "0000000000";
-            PC <= "0000";
+            IR <= "00000000000";
+            PC <= "00000";
             LR <= "00000000";
         elsif (rising_edge(slowclock)) then
             case state is
@@ -59,9 +59,9 @@ begin
                     IR <= ROMvalue;
                     state <= sExecute1;
                 when sExecute1 =>
-                    case IR(9 downto 8) is 
+                    case IR(10 downto 9) is 
                         when "00" =>  -- move instruction
-                            case IR(5 downto 4) is 
+                            case IR(6 downto 5) is 
                                 when "00" => -- ACC  
                                     SRC <= ACC;
                                 when "01" => -- LR
@@ -76,7 +76,7 @@ begin
                                     SRC <= "11111111";
                             end case;
                         when "01" =>  -- binary operator 
-                            case IR(4 downto 3) is 
+                            case IR(5 downto 4) is 
                                 when "00" => -- ACC
                                     SRC <= ACC;
                                 when "01" => -- LR
@@ -91,23 +91,23 @@ begin
                                     SRC <= "11111111";
                             end case;
                         when "10" =>  -- unconditional branch
-                            PC <= unsigned(IR(3 downto 0));
+                            PC <= unsigned(IR(4 downto 0));
                         when others =>  -- conditional branch
-                            if IR(7) = '0' then  -- SRC is ACC
+                            if IR(8) = '0' then  -- SRC is ACC
                                     if ACC = 0 then 
-                                        PC <= unsigned(IR(3 downto 0));
+                                        PC <= unsigned(IR(4 downto 0));
                                     end if;
                             else -- SRC is LR
                                     if LR = 0 then 
-                                        PC <= unsigned(IR(3 downto 0));
+                                        PC <= unsigned(IR(4 downto 0));
                                     end if;
                             end if;
                     end case;
                     state <= sExecute2;
                 when sExecute2 =>
-                    case IR(9 downto 8) is 
+                    case IR(10 downto 9) is 
                         when "00"   => -- move instruction
-                            case IR(7 downto 6) is  -- dst
+                            case IR(8 downto 7) is  -- dst
                                 when "00" => -- ACC
                                     ACC <= SRC;
                                 when "01" => -- LR 
@@ -118,8 +118,8 @@ begin
                                     ACC(7 downto 4) <= SRC(7 downto 4);
                             end case;
                         when "01"   => -- binary operation
-                            if IR(2) = '0' then -- dst is ACC
-                            case IR(7 downto 5) is 
+                            if IR(3) = '0' then -- dst is ACC
+                            case IR(8 downto 6) is 
                                 when "000" => -- add 
                                     ACC <= SRC + ACC;
                                 when "001" => -- sub
@@ -139,7 +139,7 @@ begin
                             end case;
 									 
                             else 
-                            case IR(7 downto 5) is 
+                            case IR(8 downto 6) is 
                                 when "000" => -- add 
                                     LR <= SRC + LR;
                                 when "001" => -- sub
