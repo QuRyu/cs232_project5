@@ -11,7 +11,7 @@ entity pld2 is
         reset      : in  std_logic;
         freeze     : in  std_logic;
         lights     : out std_logic_vector(7 downto 0);
-        IRView     : out std_logic_vector(9 downto 0)
+        IRView     : out std_logic_vector(10 downto 0)
     );
 
 end entity;
@@ -27,7 +27,7 @@ architecture rtl of pld2 is
     signal IR : std_logic_vector (10 downto 0) := "00000000000";
     signal PC : unsigned (4 downto 0) := "00000";
     signal LR : unsigned (7 downto 0) := "00000000";
-    signal ROMvalue : std_logic_vector(9 downto 0);
+    signal ROMvalue : std_logic_vector(10 downto 0);
 
     signal slowclock : std_logic;
     signal counter : unsigned (23 downto 0);
@@ -35,9 +35,9 @@ architecture rtl of pld2 is
     signal ACC : unsigned (7 downto 0);
     signal SRC : unsigned (7 downto 0);
 
-    component ROM_task7 
+    component ROM
         port (
-            addr : in std_logic_vector (3 downto 0);
+            addr : in std_logic_vector (4 downto 0);
             data : out std_logic_vector (10 downto 0)
         );
     end component;
@@ -182,7 +182,7 @@ begin
     IRview <= IR;
     lights <= std_logic_vector(LR);
     
-lightrom : ROM_task7
+lightrom : ROM
     port map (
         addr => std_logic_vector(PC),
         data => ROMvalue

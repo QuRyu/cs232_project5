@@ -1,14 +1,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-entity ROM is 
+entity ROM_1 is 
     port (
         addr : in std_logic_vector (3 downto 0);
         data : out std_logic_vector (9 downto 0)
     );
 end entity;
 
-architecture rlt of ROM is 
+architecture rlt of ROM_1 is 
 
 begin
 

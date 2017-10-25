@@ -21,6 +21,6 @@ begin
     "0100001100"  when addr = "0101" else -- bitwise and LR with LR 
     "0110110101"  when addr = "0110" else -- and LR with 000000001
     "1110000000"  when addr = "0111" else -- if LR 0 branch to 0000
-    "1000000011"                          -- jump tp 0011
+    "1000000011";                         -- jump tp 0011
 
 end rlt;
