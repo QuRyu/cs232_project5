@@ -7,10 +7,11 @@ use ieee.numeric_std.all;
 entity pld2 is
 
     port(
-        clk      : in  std_logic;
-        reset    : in  std_logic;
-        lights   : out std_logic_vector(7 downto 0);
-        IRView   : out std_logic_vector(9 downto 0)
+        clk        : in  std_logic;
+        reset      : in  std_logic;
+        freeze     : in  std_logic;
+        lights     : out std_logic_vector(7 downto 0);
+        IRView     : out std_logic_vector(9 downto 0)
     );
 
 end entity;
@@ -33,8 +34,8 @@ architecture rtl of pld2 is
 	 
     signal ACC : unsigned (7 downto 0);
     signal SRC : unsigned (7 downto 0);
-	 
-    component ROM 
+
+    component ROM_task7 
         port (
             addr : in std_logic_vector (3 downto 0);
             data : out std_logic_vector (9 downto 0)
@@ -166,22 +167,22 @@ begin
     end process;
 
     -- slow down the clock
-    process (clk, reset)
+    process (clk, reset, freeze)
     begin 
         if reset = '0' then 
             counter <= "000000000000000000000000";
-        elsif (rising_edge(clk)) then 
+        elsif (rising_edge(clk) and freeze = '1') then 
             counter <= counter + 1;
         end if;
 
     end process;
 
-    slowclock <= clk;
+    slowclock <=  counter(20);
 
     IRview <= IR;
     lights <= std_logic_vector(LR);
     
-lightrom : ROM 
+lightrom : ROM_task7
     port map (
         addr => std_logic_vector(PC),
         data => ROMvalue
